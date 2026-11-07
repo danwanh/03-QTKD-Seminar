@@ -66,6 +66,23 @@ Không sửa thiết kế hoặc tự đóng OQ. Thiếu đầu vào thì báo r
 từng nhận xét Đúng/Sai/Thừa, xác nhận nghiệp vụ khi đủ căn cứ và giao design
 cập nhật phần được chấp nhận. AI không tự phê duyệt thay nhóm.
 
+### Skill quy trình
+
+Các bước chi tiết cho từng sản phẩm nằm trong [skills/](skills/README.md), dùng
+chung cho mọi công cụ (không phải cấu hình riêng theo công cụ):
+
+| Skill | Sản phẩm |
+|---|---|
+| [sys-spec](skills/sys-spec/SKILL.md) | Đặc tả use case hệ thống SYS-PAY-0N |
+| [uml-diagrams](skills/uml-diagrams/SKILL.md) | Class, state machine, component (+ use case/activity) |
+| [sequence-diagram](skills/sequence-diagram/SKILL.md) | Sequence theo từng thao tác, nhánh lỗi |
+| [data-design](skills/data-design/SKILL.md) | 05-data-design.md, ERD |
+| [traceability-matrix](skills/traceability-matrix/SKILL.md) | 06-traceability-matrix.md |
+
+```text
+Đọc AGENTS.md, đóng vai agent ba, dùng skill sys-spec cho US-PAY-02.
+```
+
 ## Kiểm tra cấu hình
 
 Cần Python 3, không cài thư viện ngoài:
@@ -101,6 +118,7 @@ không tự chọn KTT/GĐKD. Các kịch bản khác nằm trong minh chứng k
 ```text
 .
 ├── AGENTS.md                        # File quy tắc và ba vai trò dùng chung
+├── skills/                          # Skill quy trình dùng chung + _shared/
 ├── README.md                        # Hướng dẫn sử dụng
 ├── docs/
 │   ├── requirements/

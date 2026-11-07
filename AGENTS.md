@@ -9,6 +9,11 @@ vai trò tương ứng trong chat hiện tại. Chỉ tạo subagent khi ngườ
 ủy nhiệm rõ ràng; không tự mở chat hoặc chạy song song. Reviewer nên được gọi
 trong chat mới để đọc đặc tả và thiết kế độc lập.
 
+Khi người dùng nói “dùng skill <tên>”, đọc skills/<tên>/SKILL.md và
+skills/_shared/payment-context.md rồi làm theo các bước trong đó, trong vai trò
+mà skill ghi. Skill chỉ chi tiết hóa cách làm; quy tắc trong file này luôn ưu
+tiên. Danh mục: [skills/README.md](skills/README.md).
+
 | Vai trò | Công việc | Nơi được ghi đầu ra |
 |---|---|---|
 | ba | Phân tích yêu cầu, acceptance criteria và Open Questions | docs/analysis/payment-management/ |
@@ -140,6 +145,7 @@ Chỉ tạo/cập nhật docs/analysis/payment-management/:
 - requirements-analysis.md: nguồn, phạm vi, user story/AC, PAY, NFR.
 - open-questions.md: bảng OQ dùng chung, giữ ID ổn định.
 - requirements-checklist.md: danh sách yêu cầu và trạng thái/OQ.
+- sys-pay-0N-<slug>.md: đặc tả use case hệ thống cho US-PAY-0N (skill sys-spec).
 
 Excel là đầu ra bổ sung khi được yêu cầu; không ghi đè Excel đồ án tổng thể.
 Không sửa đặc tả, thiết kế, cấu hình hoặc mã ứng dụng. Không chốt kiến trúc/
