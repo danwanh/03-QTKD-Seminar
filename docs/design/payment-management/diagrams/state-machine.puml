@@ -1,0 +1,131 @@
+@startuml state-machine
+!pragma layout smetana
+' Mục đích: Tổng hợp vòng đời của một bảng thanh toán từ Markdown mới nhất trên main.
+' Phạm vi: US-PAY-01..05; chỉ trạng thái của bảng gốc, không phải hồ sơ điều chỉnh.
+' US/PAY: US-PAY-01..05; PAY-01..08; NFR-PAY-01/02 (mã nội bộ).
+' Nguồn: TA-SPEC §1..6; TA-PDF tr.1..3 theo sources.md, không đọc lại PDF.
+' Bản đầu vào: main 821eb4b0a2ce1b1d4d52c4eaf524a57374fbbe14, 07/11/2026.
+' Bản Markdown và guard chi tiết: ../03-detailed-design.md, mục 1..5.
+' Trạng thái: Design Pending Approval.
+
+title Vòng đời Bảng thanh toán
+caption US-PAY-01..05 · main 821eb4b · Design Pending Approval
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #344B63
+skinparam ArrowFontColor #26384A
+skinparam ArrowThickness 1.4
+skinparam nodesep 55
+skinparam ranksep 65
+skinparam state {
+  BackgroundColor #F4F7FB
+  BorderColor #526984
+  FontColor #18334F
+  RoundCorner 14
+}
+skinparam note {
+  BackgroundColor #FFFBEF
+  BorderColor #C5AE70
+  FontColor #483F2C
+}
+
+state Draft #EDF4FD
+state PendingApproval #FFF5DE
+state Approved #E9F5ED
+state Rejected #FCEEEE
+state Cancelled #EFF0F3
+
+' Khởi tạo UML chỉ có effect; điều kiện G-CREATE được kiểm tra trước khi tạo đối tượng.
+[*] --> Draft : / lưu bảng và dòng; ghi audit (T01)
+
+Draft : saveDraft(update) [G-SAVE]
+Draft : / tính lại tiền; lưu; ghi audit (T02)
+
+Draft --> PendingApproval : submit [G-SUBMIT]
+Draft --> PendingApproval : / ghi audit; yêu cầu thông báo (T03)
+
+PendingApproval --> Approved : approve [G-APPROVE]
+PendingApproval --> Approved : / lưu quyết định; ghi audit (T04)
+
+Draft --> Cancelled : cancel [G-CANCEL]
+Draft --> Cancelled : / ghi audit (T10)
+Cancelled --> [*]
+
+' Các cạnh màu cam, nét đứt là lựa chọn loại trừ nhau hoặc đề xuất chưa xác nhận.
+PendingApproval -[#B76B19,dashed]-> Rejected : reject [G-REJECT]
+PendingApproval -[#B76B19,dashed]-> Rejected : / lưu lý do; ghi audit (T05)
+PendingApproval -[#B76B19,dashed]-> Draft : reject [G-REJECT]
+PendingApproval -[#B76B19,dashed]-> Draft : / lưu lý do; ghi audit (T06)
+Rejected -[#B76B19,dashed]-> Draft : reopen [G-REOPEN]
+Rejected -[#B76B19,dashed]-> Draft : / ghi audit (T07)
+Rejected -[#B76B19,dashed]-> Cancelled : cancel [G-CANCEL-REJECTED]
+Rejected -[#B76B19,dashed]-> Cancelled : / ghi audit (T08)
+
+' Phản ứng nội bộ theo US-PAY-04 After Review: không thoát/vào lại Approved.
+Approved : adjust [G-ADJUST]
+Approved : / lưu hồ sơ riêng; ghi audit (T09A)
+Approved : Giữ trạng thái và số liệu bảng gốc.
+
+Approved -[#B76B19,dashed]-> PendingApproval : adjust [G-READJUST]
+Approved -[#B76B19,dashed]-> PendingApproval : / ghi audit; yêu cầu duyệt lại (T09B)
+
+note left of Draft
+  <b>Lập / sửa — US-PAY-01</b>
+  saveDraft(create) chỉ khởi tạo khi G-CREATE đạt.
+  PAY-01/02/03; CREATE-01..04, 08..12; KT-01..04.
+  Cancelled không chặn tạo bảng mới có ID riêng;
+  không phục hồi bảng đã hủy (CREATE-02; KT-03).
+end note
+
+note right of PendingApproval
+  <b>Phân cấp duyệt — US-PAY-02/03</b>
+  Dưới 500 triệu: KTT; trên 500 triệu: GĐKD.
+  PAY-07: người lập không được tự duyệt.
+  Đúng 500 triệu: Blocked by OQ-P03-01
+  (= OQ-US-PAY-02-02).
+  Danh mục bắt buộc: OQ-US-PAY-02-01.
+  Quyền / người nhận / bản trình: OQ-US-PAY-02-04..07.
+end note
+
+note right of Rejected
+  <b>Sau từ chối — US-PAY-03</b>
+  T05: về Rejected theo TA-SPEC §3.
+  T06: về Draft theo PAY-08.
+  T07: người tạo mở lại theo SYS-PAY-03 v2.
+  T08: hủy trực tiếp theo SYS-PAY-03 v2;
+  SYS-PAY-05 chỉ cho hủy Draft.
+  Blocked by OQ-P03-02/12; OQ-PAY05-01.
+  Không áp dụng đồng thời các cách xử lý.
+end note
+
+note right of Approved
+  <b>Điều chỉnh — US-PAY-04</b>
+  T09A: After Review giữ bảng gốc Approved,
+  lưu hồ sơ riêng (chatlog After Review P-04).
+  T09B: SYS-PAY-03 v2 đề xuất quay lại chờ duyệt.
+  Blocked by OQ-P03-17/21 và US-PAY-04 OQ-03.
+  Nội dung / biên bản: US-PAY-04 OQ-02.
+  Không suy ra hồ sơ vừa ghi đã có hiệu lực.
+end note
+
+note left of Cancelled
+  <b>Hủy — US-PAY-05</b>
+  Không dùng lại bảng đã hủy (TA-SPEC §4.5).
+  Quyền hủy: OQ-PAY05-02.
+  Bắt buộc lý do hủy: OQ-PAY05-03.
+  Nút kết thúc không có nghĩa xóa bản ghi.
+end note
+
+legend bottom
+  Nét liền: luồng có căn cứ trong TA hoặc quyết định được ghi nhận trong bản mới nhất.
+  Nét đứt màu cam: [GIẢ ĐỊNH – Cần xác nhận]; chỉ đối chiếu lựa chọn, chưa phải luồng cuối.
+  G-* là guard, T* là mã truy vết nội bộ tại 03-detailed-design.md; không phải mã của đề.
+  Audit: ai, lúc nào, thay đổi gì — TA-SPEC §6, NFR-PAY-01.
+  Guard không đạt / ghi thất bại: không có chuyển trạng thái do yêu cầu đó.
+  Trình lặp: trả kết quả đã ghi, không chuyển / ghi audit trạng thái thêm (PAY-04; US-PAY-02 v2 A2).
+  Thông báo lỗi sau khi trình thành công: giữ PendingApproval (US-PAY-02 v2 A7).
+endlegend
+@enduml
