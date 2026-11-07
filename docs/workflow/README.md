@@ -6,8 +6,9 @@ Sản phẩm cuối bài tập được liệt kê ở TA-PDF trang 3, xem [sổ
 
 ## Trình tự
 
-1. Kiểm tra cấu hình theo [README workspace](../../README.md); mở chat mới để
-   nạp hướng dẫn. Ghi công cụ/phiên bản và nguồn đầu vào.
+1. Kiểm tra cấu hình theo [README workspace](../../README.md); yêu cầu AI đọc
+   toàn bộ [AGENTS.md](../../AGENTS.md), áp dụng quy tắc chung và vai trò cần dùng.
+   Ghi công cụ/phiên bản và nguồn đầu vào.
 2. Chạy BA từ TA-SPEC/TA-PDF cục bộ; nhóm kiểm tra OQ. Không tự suy ra câu trả
    lời từ tài liệu ngoài phạm vi.
 3. Chạy design lần đầu; ghi giả định/OQ ngay từ đầu, không sửa hồi tố đặc tả.
@@ -41,7 +42,7 @@ Ghi vào [prompt-log.md](prompt-log.md). Không lưu mật khẩu/token hoặc d
 không liên quan. Prompt dài có thể lưu file trong `docs/workflow/prompts/` và
 dẫn đường dẫn; phải giữ bản thực tế đã gửi, không chỉ prompt mẫu.
 
-| Lần/ngày | Công cụ/phiên bản, chế độ vai trò/subagent | Vai trò/người thao tác | Prompt thực tế | Nguồn/bản đầu vào | Đầu ra/commit | Đã kiểm tra và kết quả | Phần nhóm sửa |
+| Lần/ngày | Công cụ/phiên bản, cách gọi vai trò | Vai trò/người thao tác | Prompt thực tế | Nguồn/bản đầu vào | Đầu ra/commit | Đã kiểm tra và kết quả | Phần nhóm sửa |
 |---|---|---|---|---|---|---|---|
 
 ## Open Questions và quyết định
@@ -69,9 +70,10 @@ chưa trả lời phải giữ trạng thái chờ, không bịa kết luận đ
 
 ## Phần AI viết và phần nhóm sửa
 
-Lần thiết lập này do AI tạo/cập nhật bộ agent/rules, các adapter, README, công cụ
-kiểm tra, sổ nguồn và minh chứng. Nguồn có sẵn: đặc tả, tài liệu đồ án, Excel,
-code demo. `CLAUDE.md` giữ hướng dẫn chung cũ và thêm điểm vào dự án.
+Lần điều chỉnh hiện tại do AI gộp toàn bộ rules, ba vai trò và các nguyên tắc làm
+việc chung vào AGENTS.md; bỏ cấu hình riêng theo công cụ và bộ sinh cấu hình.
+README, công cụ kiểm tra và minh chứng được cập nhật theo cách dùng một file.
+Nguồn có sẵn: đặc tả, tài liệu đồ án, Excel và code demo.
 Người dùng xác nhận cho phép dùng cấu hình Codex/Claude tương đương; điều đó
 không phải xác nhận tất cả nội dung cấu hình hoặc câu hỏi nghiệp vụ.
 

@@ -1,6 +1,6 @@
 # payment-management – danh mục thiết kế dự kiến
 
-Thư mục này nhận đầu ra của agent `design` (`.agents/agents/design.md`).
+Thư mục này nhận đầu ra của vai trò `design` trong [AGENTS.md](../../../AGENTS.md).
 Hiện mới có chỉ mục và thư mục sơ đồ; chưa chạy agent tạo bộ thiết kế.
 Cách gọi, nguồn yêu cầu và giới hạn vai trò nằm trong README ở gốc workspace.
 Không coi các file liệt kê bên dưới là đã tồn tại hoặc đã được phê duyệt.
