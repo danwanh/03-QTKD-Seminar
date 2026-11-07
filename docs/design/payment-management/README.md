@@ -1,6 +1,6 @@
 # payment-management – bộ thiết kế (Yêu cầu 1)
 
-Thư mục này do agent `design` sinh ra (Claude: `.claude/agents/design.md`, Codex: `.codex/agents/design.toml`).
+Thư mục này do agent `design` (`.agents/agents/design.md`) sinh ra.
 
 | File | Nội dung theo đề bài |
 |---|---|
