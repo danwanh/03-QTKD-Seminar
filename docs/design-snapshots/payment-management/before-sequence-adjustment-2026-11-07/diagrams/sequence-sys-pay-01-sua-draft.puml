@@ -1,0 +1,93 @@
+@startuml sys_pay_01_sua_draft
+' Nguồn: TA-SPEC §4.1, PAY-01..03, §6; SYS-PAY-01 v02 A1, E9.
+' Quyết định: CREATE-03, CREATE-08..10; KT-01, KT-02, KT-04.
+' Thành phần, phương thức và expectedVersion là đề xuất TO-BE.
+title SYS-PAY-01 — A1: Chỉnh sửa Draft do mình lập
+hide footbox
+autonumber
+skinparam defaultFontName Segoe UI
+skinparam defaultFontSize 13
+skinparam maxMessageSize 240
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+
+actor "Nhân viên kinh doanh\n(NVKD)" as User
+boundary "PaymentForm\nGiao diện bảng thanh toán" as UI
+control "PaymentApplicationService\nĐiều phối nghiệp vụ" as Service
+participant "PaymentSourceReader\nHợp đồng / Bảng giá / Sản lượng\n<<chỉ đọc>>" as Source
+database "PaymentStore\nBảng / Dòng / Audit / Kết quả lưu" as Store
+
+note over Service, Store
+  [ĐỀ XUẤT KỸ THUẬT] Các lifeline là vai trò TO-BE.
+  [QUYẾT ĐỊNH ĐÃ XÁC NHẬN] CREATE-03, 08, 10.
+  Tham chiếu: SYS-PAY-01 v02, A1 và E9.
+end note
+
+User -> UI : Mở bản nháp để chỉnh sửa
+UI -> Service : openDraft(actor, paymentId)
+Service -> Service : Kiểm tra vai trò NVKD
+break không có vai trò NVKD
+  Service --> UI : Từ chối truy cập
+  UI --> User : Thông báo không có quyền
+end
+Service -> Store : Đọc bảng, các dòng, người lập, trạng thái, phiên bản
+Store --> Service : Bảng hiện tại / không tồn tại
+break không tìm thấy / không phải người lập
+  Service --> UI : Không cho sửa bảng
+  UI --> User : Thông báo không đủ điều kiện chỉnh sửa
+end
+break bảng không còn Draft — E9
+  Service --> UI : Từ chối sửa; trả trạng thái hiện tại
+  UI --> User : Thông báo bảng không còn là bản nháp
+end
+
+Service -> Source : Đọc trạng thái và hiệu lực hợp đồng
+Source --> Service : Thông tin hiệu lực / lỗi nguồn
+break lỗi nguồn hoặc hợp đồng không còn hiệu lực — E9/E10
+  Service --> UI : Không cho tiếp tục chỉnh sửa
+  UI --> User : Thông báo nguyên nhân; dữ liệu đã lưu giữ nguyên
+end
+
+Service --> UI : Draft hiện có + expectedVersion + sourceBaseline
+UI --> User : Hiển thị dữ liệu đã lưu để chỉnh sửa
+note over UI, Service
+  CREATE-08: được sửa kỳ, sản lượng, bảng giá, dịch vụ, ghi chú.
+  KT-01: chỉ bảng giá hiện hành; không tự sửa đơn giá/thành tiền.
+  Không thay người lập và không sửa dữ liệu module nguồn.
+end note
+
+loop NVKD chỉnh sửa bản nháp
+  User -> UI : Thay đổi trường được phép
+  UI -> Service : previewChanges(paymentId, draftInput, sourceBaseline)
+  opt đổi kỳ / dịch vụ / bảng giá áp dụng
+    Service -> Source : Đọc dữ liệu phù hợp với lựa chọn mới
+    Source --> Service : Nguồn phù hợp / nguyên nhân không hợp lệ
+    Service -> Store : Kiểm tra bảng trùng kỳ mới, loại trừ chính bảng đang sửa
+    Store --> Service : Kết quả kiểm tra trùng
+  end
+  alt dữ liệu phục vụ tính toán hợp lệ
+    Service -> Service : Tính lại thành tiền và tổng tiền
+    Service --> UI : Bản xem trước cập nhật; chưa ghi dữ liệu
+    UI --> User : Hiển thị để NVKD kiểm tra
+  else lựa chọn hoặc nguồn không hợp lệ
+    Service --> UI : Thông báo nguyên nhân; không ghi thay đổi
+    UI --> User : Giữ phần nhập để NVKD sửa lại
+  end
+end
+
+ref over User, Store
+  Lưu thay đổi Draft — interaction dùng chung
+  sequence-sys-pay-01-luu-draft.puml
+  mode = update; paymentId; expectedVersion; sourceBaseline
+end ref
+
+note over Service, Store
+  KT-04: khi ghi phải kiểm tra lại người lập và trạng thái Draft.
+  [ĐỀ XUẤT KỸ THUẬT] Kiểm tra expectedVersion khi ghi
+  để không ghi đè bản đã được sửa từ phiên làm việc khác.
+  Giữ nguyên người lập; audit ghi người thực hiện điều chỉnh.
+  Chi tiết gom dòng/làm tròn: Blocked by CREATE-06, CREATE-07.
+end note
+
+footer Design Pending Approval — A1 SYS-PAY-01 v02 — không chỉnh sửa ngoài Draft
+@enduml

@@ -1,6 +1,11 @@
-# payment-management – bộ thiết kế (Yêu cầu 1)
+# payment-management – danh mục thiết kế dự kiến
 
-Thư mục này do agent `design` (`.agents/agents/design.md`) sinh ra.
+Thư mục này nhận đầu ra của vai trò `design` trong [AGENTS.md](../../../AGENTS.md).
+Đã có [sequence diagram cho SYS-PAY-01](diagrams/README.md) dựa trên bản phân tích v02.
+Các thành phần trong sơ đồ là đề xuất TO-BE; chưa có bộ thiết kế đầy đủ hoặc
+phê duyệt thiết kế. Các file trong bảng bên dưới vẫn là danh mục dự kiến.
+Cách gọi, nguồn yêu cầu và giới hạn vai trò nằm trong README ở gốc workspace.
+Không coi các file liệt kê bên dưới là đã tồn tại hoặc đã được phê duyệt.
 
 | File | Nội dung theo đề bài |
 |---|---|
