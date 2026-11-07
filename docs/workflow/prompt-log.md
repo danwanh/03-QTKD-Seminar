@@ -54,6 +54,22 @@ hợp nhất thành một file AGENTS.md trong SETUP-03; không dùng cấu trú
   đã đăng ký riêng theo công cụ.
 - Kiểm chứng hiện tại: [config-verification.md](config-verification.md).
 
+## SETUP-04 – 07/11/2026
+
+- Công cụ: Claude Code (desktop app, tab Code), model Claude Opus 5.5.
+- Yêu cầu người dùng: “đọc src code và đề bạn hãy giúp tôi tạo các file skill để
+  làm sys spec, sequence, các diagram, thiết kế dữ liệu, ma trận truy vết”.
+- Làm rõ: người dùng chọn đặt skill ở `skills/` trung lập (không dùng thư mục
+  cấu hình riêng theo công cụ, giữ nguyên hướng gộp của SETUP-03).
+- Nguồn đã đọc: TA-SPEC, sổ nguồn, AGENTS.md, README, workflow, `sys-pay-03-duyet-tu-choi.md`,
+  toàn bộ `src/Qtkd.Api/` (4 file). Không đọc DATH/Excel; không mở PDF (dùng TA-SPEC).
+- Đầu ra: `skills/README.md`, `skills/_shared/payment-context.md`, 5 skill
+  (sys-spec, uml-diagrams, sequence-diagram, data-design, traceability-matrix);
+  thêm cách gọi skill trong AGENTS.md/README; verify script kiểm tra skill.
+  Không chạy skill nào để tạo đặc tả/thiết kế; không sửa đặc tả hay `src/`.
+- Kiểm chứng: xem [config-verification.md](config-verification.md).
+- Nhóm sửa/phê duyệt: chưa có ghi nhận.
+
 ## Những lần chạy tiếp theo
 
 Dùng bảng ở [workflow README](README.md); thêm prompt thực tế, kết quả,

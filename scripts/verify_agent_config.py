@@ -14,6 +14,8 @@ PDF_SHA256 = "bc8b34cc847343151a496c2a515a7178bf90a834d5bee909bddcf56179bd218e"
 SPEC_SHA256 = "7fc1f7f54d291a3ea442d5475fce6fd660ed15919fdc49717f8db00c2e3ac951"
 LEGACY_PATHS = (".agents", ".codex", ".claude", ".cursor", "CLAUDE.md",
                 "scripts/sync_agent_config.py")
+SKILLS = ("sys-spec", "uml-diagrams", "sequence-diagram", "data-design",
+          "traceability-matrix")
 
 
 def text_values(value):
@@ -54,6 +56,13 @@ def verify(codex=False):
                      "docs/design/payment-management/diagrams",
                      "docs/review/payment-management"):
         check((ROOT / relative).exists(), "workspace path: " + relative)
+    skill_docs = ["skills/README.md", "skills/_shared/payment-context.md"]
+    for name in SKILLS:
+        relative = f"skills/{name}/SKILL.md"
+        path = ROOT / relative
+        check(path.is_file() and path.read_text(encoding="utf-8").startswith(
+            f"---\nname: {name}\n"), "skill with front matter: " + relative)
+        skill_docs.append(relative)
     for relative, digest in (
         ("docs/requirements/payment-management/assignment-ta-1-2.pdf", PDF_SHA256),
         ("docs/requirements/payment-management/spec.md", SPEC_SHA256),
@@ -65,7 +74,7 @@ def verify(codex=False):
     setup_docs = ["AGENTS.md", "README.md", "docs/workflow/README.md",
                   "docs/workflow/config-verification.md", "docs/workflow/prompt-log.md",
                   "docs/requirements/payment-management/sources.md",
-                  "docs/design/payment-management/README.md"]
+                  "docs/design/payment-management/README.md"] + skill_docs
     for relative in setup_docs:
         path = ROOT / relative
         content = path.read_text(encoding="utf-8")
