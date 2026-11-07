@@ -1,0 +1,122 @@
+@startuml sequence-us-pay-02-v2
+title US-PAY-02 - Sequence v2
+hide footbox
+autonumber
+skinparam defaultFontName Arial
+skinparam defaultFontSize 15
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 260
+actor NVKD
+boundary "Màn hình bảng thanh toán" as UI
+control PaymentSubmissionService as Service
+control "SubmissionPolicy\n(interface chỉ đọc)" as Policy
+database "SubmissionStore\nbảng / lần trình / việc / audit / yêu cầu gửi" as Store
+control NotificationService as Notify
+actor "Người duyệt\nKTT / GĐKD" as Approver
+
+
+
+group B1 - Đọc bảng và kiểm tra quyền
+ NVKD -> UI : Chọn Trình duyệt
+ UI -> Service : submit(boardId, expectedVersion, requestKey)
+ Service -> Store : Đọc bảng hiện hành
+ Store --> Service : Nội dung / status / version / creator
+ break Không có bảng hoặc không có quyền  - A1
+   Service --> UI : Từ chối; không ghi thay đổi
+   UI --> NVKD : Hiển thị lý do
+ end
+end
+
+group B2 - Trình trùng và bản hiện hành (PAY-04)
+ Service -> Store : Tìm kết quả theo boardId, expectedVersion, requestKey
+ Store --> Service : Kết quả nếu đã xử lý
+ break Lần gửi đã xử lý - A2
+   Service --> UI : Kết quả đã ghi; không tạo lần trình mới
+   UI --> NVKD : Hiển thị trạng thái hiện tại
+ end
+ break Không còn Draft hoặc sai phiên bản - A3
+   Service --> UI : Không ghi đè; yêu cầu tải lại
+   UI --> NVKD : Hiển thị trạng thái / dữ liệu mới
+ end
+end
+
+group B3 - Kiểm tra PAY-04
+ Service -> Policy : Đọc danh mục bắt buộc 
+ Policy --> Service : Danh mục dịch vụ bắt buộc
+ Service -> Service : Kiểm tra tổng âm / dòng bắt buộc
+ break Tổng âm hoặc thiếu dịch vụ - A4
+   Service --> UI : Chặn trình; giữ Draft; nội dung lỗi
+   UI --> NVKD : Sửa bảng rồi thực hiện lại
+ end
+end
+
+group B4 - Cấp duyệt và người nhận
+ break Tổng = 500 triệu: dừng mô tả nhánh chưa chốt
+   note over Service, Approver
+   Blocked by OQ-US-PAY-02-02:
+   §4.3: từ 500 triệu GĐKD;
+   PAY-06: trên 500 triệu GĐKD, còn lại KTT.
+   end note
+ end
+ Service -> Policy : Xác định cấp duyệt và người nhận 
+ alt Tổng < 500 triệu
+   Policy --> Service : Người nhận thuộc KTT
+ else Tổng > 500 triệu
+   Policy --> Service : Người nhận thuộc GĐKD
+ end
+ break Không có người hợp lệ / người nhận = người lập - A5
+   note right of Service : PAY-07 cấm người lập tự duyệt.
+   Service --> UI : Giữ Draft; cần phân công hợp lệ
+   UI --> NVKD : Hiển thị lý do
+ end
+end
+
+group B5 - Ghi nguyên tử và kiểm tra đồng thời
+ Service -> Store : Giao dịch: kiểm tra Draft + expectedVersion;\nlưu PendingApproval, bản đã trình,\ncông việc, audit, requestKey, yêu cầu gửi
+ note right of Store
+ Chỉ một yêu cầu đồng thời được ghi thành công.
+ Nếu ghi lỗi: hoàn tác toàn bộ.
+ Không gửi thông báo trước khi giao dịch hoàn tất.
+ end note
+ Store --> Service : Kết quả giao dịch
+ alt Yêu cầu khác đã trình trước - A2
+   Service --> UI : Trả kết quả đã trình; không ghi trùng
+   UI --> NVKD : Trạng thái hiện tại
+ else Bản dữ liệu đổi trước lúc ghi - A3
+   Service --> UI : Không ghi đè; yêu cầu tải lại
+   UI --> NVKD : Tải bản mới
+ else Ghi thất bại / audit lỗi - A6
+   Service --> UI : Không thành công; có thể thử lại cùng requestKey
+   UI --> NVKD : Hiển thị lỗi; không báo đã trình
+ else Giao dịch thành công
+   group B6 - Phản hồi NVKD
+     Service --> UI : Đã trình; PendingApproval; người nhận;\nđã ghi nhận yêu cầu thông báo
+     UI --> NVKD : Hiển thị kết quả
+   end
+   group B7 - Gửi thông báo sau khi ghi thành công
+     loop Có yêu cầu gửi chưa hoàn tất; gửi lại theo cơ chế được chọn
+       Notify -> Store : Đọc yêu cầu gửi đã ghi
+       Store --> Notify : Lần trình / người nhận / nội dung
+       Notify -> Approver : Thông báo yêu cầu duyệt
+       alt Gửi thành công theo tiêu chí OQ-03
+         Notify -> Store : Ghi kết quả gửi; tránh xử lý lặp
+       else Gửi lỗi - A7
+         Notify -> Store : Lưu lỗi gửi để xử lý lại
+         note over Store, Notify
+         Giữ PendingApproval và công việc.
+         Không tạo lần trình/audit chuyển trạng thái mới.
+         Thông tin gửi không phải trạng thái bảng thanh toán.
+         end note
+       end
+     end
+   end
+ end
+end
+
+legend left
+Nguồn: TA-SPEC §2–3, §4.2–4.3, §5 PAY-03/04/06/07, §6 audit.
+B1–B7 / A1–A7 khớp đặc tả v2 tại sys-pay-02(v2).md.
+OQ-xx = OQ-US-PAY-02-xx. Các vấn đề nghiệp vụ còn mở được ghi tại sys-pay-02(v2).md.
+Không mô tả CRUD hợp đồng, bảng giá, sản lượng; không duyệt/từ chối.
+endlegend
+@enduml
