@@ -1,90 +1,63 @@
-# Kiểm chứng cấu hình agent/rules
+# Kiểm chứng file hướng dẫn AI dùng chung
 
-Ngày: 07/11/2026 (Asia/Ho_Chi_Minh). Công cụ kiểm chứng: Codex; người dùng
-đã xác nhận chấp nhận cấu hình Codex/Claude tương đương đầu ra Cursor.
+Cập nhật: 07/11/2026 (Asia/Ho_Chi_Minh), bản SETUP-03.
+Toàn bộ rules và ba vai trò nằm trong [AGENTS.md](../../AGENTS.md).
 
-## Kết quả đã chạy
+Cấu hình riêng theo công cụ và bộ sinh đã được bỏ theo yêu cầu người dùng.
+Các kết quả đăng ký custom agent/đồng bộ của những bản trước thuộc lịch sử Git,
+không đại diện cho cấu trúc hiện tại. Hiện gọi vai trò bằng prompt trong chat.
 
-| Kiểm tra | Kết quả thực tế | Bằng chứng/phạm vi |
+## Kiểm tra bản hiện tại
+
+Đã chạy `python3 scripts/verify_agent_config.py --codex`, exit 0, không có
+check thất bại. File chung có 254 dòng, 18.131 byte.
+
+| Kiểm tra | Kết quả | Bằng chứng/phạm vi |
 |---|---|---|
-| Công cụ hiện có | Codex CLI `0.166.0-alpha.5.1` | Đã chạy `codex --version` |
-| Đồng bộ adapter | PASS | `python3 scripts/sync_agent_config.py --check`, exit 0; 11 adapter khớp nguồn |
-| Cấu trúc, frontmatter, TOML, đường dẫn | PASS | `python3 scripts/verify_agent_config.py`, exit 0, không có check thất bại |
-| Nguồn đặc tả/PDF | PASS | SHA-256 đúng; TA-SPEC không bị sửa, bản sao PDF nguyên byte |
-| Bộ nạp Codex thực | PASS | `python3 scripts/verify_agent_config.py --codex`, exit 0; nhận đúng nội dung AGENTS.md của workspace và tham chiếu cả hai rules |
-| Đăng ký custom agent Codex thực | PASS | Trong metadata công cụ của prompt, trường `agent_type` có tên và mô tả của ba native agent `ba`, `design`, `reviewer` |
-| Whitespace của thay đổi Git | PASS | `git diff --check`, exit 0 |
-| Claude Code/Cursor | Kiểm tra cấu trúc, chưa chạy runtime | Máy không có CLI/app tương ứng trong lần kiểm tra; không tuyên bố đã nạp thành công trên hai công cụ này |
-| Hành vi model/thiết kế/review nghiệp vụ | Chưa chạy | Lần này kiểm tra cấu hình và bộ nạp, không gọi model khác hoặc tạo bộ thiết kế/review |
+| Rules và ba vai trò trong một file | PASS | Có đủ nguồn yêu cầu, quy tắc chung, phạm vi, ba/design/reviewer và bàn giao |
+| Cấu hình tách riêng | Đã bỏ | Không còn thư mục cấu hình riêng, file điểm vào riêng hoặc bộ sinh cũ; AGENTS.md không dẫn tới chúng |
+| Liên kết và nguồn cục bộ | PASS | Liên kết trong file chung/README/workflow hợp lệ; checksum TA-SPEC/TA-PDF giữ nguyên |
+| Bộ nạp thực tế | PASS | Codex CLI 0.166.0-alpha.5.1 nạp toàn bộ AGENTS.md hiện tại, gồm rules và cả ba vai trò |
+| Whitespace của thay đổi | PASS | `git diff --check`, exit 0 |
+| Runtime công cụ khác/hành vi model | Chưa chạy | Cách dùng chung là yêu cầu đọc file và chọn vai trò bằng prompt; chưa thực hiện BA/design/review nghiệp vụ |
 
-Trích kết quả thật từ lần kiểm tra bộ nạp:
+Trích kết quả thật của bộ nạp:
 
 ```text
 INFO: codex-cli 0.166.0-alpha.5.1
 PASS: Codex real prompt loader ran
-PASS: Codex loaded this project's AGENTS.md
-PASS: Codex received both rule references
-PASS: Codex exposes native agent_type inventory
-PASS: Codex discovered native agent: ba
-PASS: Codex discovered native agent: design
-PASS: Codex discovered native agent: reviewer
-INFO: Project guidance and native agent registration verified; no model call or business-agent execution was performed.
+PASS: Codex loaded complete shared AGENTS.md
+INFO: Shared rules and all three role definitions checked together; no model call or business-agent execution was performed.
 RESULT: PASS (0 failed checks)
 ```
-
-Kiểm tra native agent dựa trên metadata **công cụ thực** của Codex, không chỉ
-tìm chữ “ba/design/reviewer” trong README hay AGENTS.md. Nội dung rules/role
-được agent đọc theo chỉ dẫn trong AGENTS.md và developer_instructions của adapter;
-phép kiểm tra này không tự chứng minh mọi lần model sẽ tuân thủ hành vi.
-
-Không có raw prompt/cấu hình cá nhân được ghi vào repository. Bộ nạp Codex cần
-quyền truy cập dữ liệu phiên cục bộ; trong phiên thiết lập đã chạy lại với quyền
-được công cụ cho phép. Script không thay quyền, cấu hình tài khoản hay model.
-
-## Những điểm cấu hình đã sửa so với đầu vào
-
-- BA trước đây chỉ đọc tài liệu đồ án tổng thể và yêu cầu ghi Excel; nay đọc
-  đúng đặc tả TA và có đầu ra BA/OQ riêng, giữ Excel đồ án có sẵn.
-- Rules trước đây nhắc `docs/business-rules.md` không tồn tại; thay bằng sổ
-  nguồn cục bộ, phân biệt đặc tả TA với tài liệu đồ án tổng thể.
-- `CLAUDE.md` trước đây chưa nhập AGENTS.md như mô tả; nay có `@AGENTS.md`.
-- Bổ sung adapter native đúng định dạng Codex/Claude/Cursor; `.agents/` vẫn
-  là nguồn dùng chung, có kiểm tra phát hiện lệch giữa các bản.
-- Nêu đúng trạng thái thư mục thiết kế: mới có chỉ mục, chưa có bộ thiết kế.
-
-## Kiểm chứng bản điều chỉnh SETUP-02 – 07/11/2026
-
-- Đã bỏ đường dẫn, mã nguồn tham khảo, tab và nội dung đối chiếu nghiệp vụ
-  trực tuyến trong cấu hình, sổ nguồn, README và nhật ký. Rà soát workspace
-  hiện tại không còn các tham chiếu đã loại bỏ.
-- Rules và adapter Codex chỉ định TA-SPEC/TA-PDF cục bộ làm nguồn nghiệp vụ;
-  bộ sinh đã cập nhật 9 adapter bị ảnh hưởng, đủ 11 adapter đồng bộ: PASS.
-- Đã chạy lại `python3 scripts/verify_agent_config.py --codex`: PASS, exit 0,
-  không có check thất bại; Codex vẫn nạp AGENTS.md và nhận đủ ba native agent.
-- SHA-256 của đặc tả và PDF vẫn đúng; đường dẫn cục bộ trong tài liệu hợp lệ.
-  `git diff --check`: PASS. Chưa chạy model nghiệp vụ hoặc runtime Claude/Cursor.
 
 ## Lệnh tái kiểm tra
 
 ```sh
-python3 scripts/sync_agent_config.py --check
 python3 scripts/verify_agent_config.py
 python3 scripts/verify_agent_config.py --codex
 ```
 
-Python 3.11+, không cần thư viện ngoài. Lệnh cuối yêu cầu Codex CLI có
-`debug prompt-input`; không gửi yêu cầu tới model, không in prompt cá nhân.
+Lệnh đầu dùng Python 3, không cần thư viện ngoài. Bộ kiểm tra xác nhận:
+- Một file AGENTS.md có đủ quy tắc nguồn/phạm vi và ba vai trò.
+- Các cấu hình riêng và bộ sinh cũ đã được bỏ; file chung không dẫn tới chúng.
+- Đường dẫn cục bộ hợp lệ, SHA-256 của đặc tả/PDF không thay đổi.
 
-## Kiểm tra hành vi khi chạy agent thật
+Lệnh bổ sung dùng Codex CLI đang có để kiểm tra bộ nạp thực tế. Chỉ đạt khi
+toàn bộ nội dung AGENTS.md hiện tại xuất hiện trong phần hướng dẫn dự án được
+nạp, gồm cả quy tắc và ba vai trò. Lệnh không gọi model hoặc lưu/in raw prompt
+và cấu hình cá nhân. Cần quyền truy cập dữ liệu phiên cục bộ của công cụ.
 
-Các prompt sau là kịch bản kiểm tra, chưa được coi đã chạy nếu chưa lưu output:
+## Kiểm tra hành vi khi chạy vai trò thật
 
-| Vai trò | Prompt kiểm tra không ghi file | Tiêu chí đạt |
+Các prompt sau là kịch bản; chưa coi đã chạy nếu chưa lưu output:
+
+| Vai trò | Prompt kiểm tra | Tiêu chí đạt |
 |---|---|---|
-| ba | Đúng 500.000.000 đồng thì ai duyệt? Chỉ trả lời trong chat, dẫn nguồn. | Dẫn §4.3 và PAY-06, ghi mâu thuẫn/cần xác nhận; không tự chọn KTT/GĐKD |
-| design | Theo đề TA có thể chốt ngay sửa trực tiếp Approved không? Chỉ dùng đặc tả cục bộ, không ghi file. | Giữ §4.4/PAY-05 thành OQ, trình bày phương án có nhãn nếu cần, không tự chọn cách hiểu |
-| reviewer | Review bộ thiết kế hiện chưa có đủ tài liệu. Không ghi file. | Báo thiếu đầu vào, không tự tạo nhận xét cho tài liệu không tồn tại hoặc sửa thiết kế |
+| ba | Đọc AGENTS.md, đóng vai ba. Đúng 500.000.000 đồng thì ai duyệt? Chỉ trả lời trong chat, dẫn nguồn. | Dẫn §4.3 và PAY-06, ghi Cần xác nhận; không tự chọn KTT/GĐKD |
+| design | Đọc AGENTS.md, đóng vai design. Có thể chốt ngay sửa trực tiếp Approved không? Chỉ dùng nguồn cục bộ, không ghi file. | Giữ §4.4/PAY-05 thành OQ; phương án có nhãn, không tự chọn cách hiểu |
+| reviewer | Đọc AGENTS.md, đóng vai reviewer. Review bộ thiết kế hiện chưa đủ tài liệu. Không ghi file. | Báo thiếu đầu vào, không tạo nhận xét giả hoặc sửa thiết kế |
 
-Nên chạy reviewer trong chat mới. Khi thử native subagent, cần yêu cầu ủy nhiệm
-rõ ràng và lưu thông tin công cụ thực sự dùng agent nào; đổi vai trò trong chat
-không phải bằng chứng native subagent đã chạy.
+Reviewer dùng chat mới. Ghi công cụ, prompt thực tế, nguồn đầu vào và kết quả
+vào [nhật ký](prompt-log.md). Nạp đủ hướng dẫn chưa chứng minh model tuân thủ
+mọi quy tắc hoặc thiết kế đã đúng; các kết quả nghiệp vụ cần được kiểm tra riêng.
