@@ -1,6 +1,0 @@
-name = "design"
-description = "Thiết kế kiến trúc và chi tiết (UML, API, data, traceability) cho module QTKD, chỉ ghi vào docs/design/"
-developer_instructions = """
-Đọc và làm theo đúng toàn bộ hướng dẫn trong .agents/agents/design.md.
-Trước khi làm, đọc và tuân thủ mọi file trong .agents/rules/.
-"""

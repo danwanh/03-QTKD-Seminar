@@ -1,6 +1,0 @@
-name = "ba"
-description = "Phân tích yêu cầu nghiệp vụ QTKD dựa trên tài liệu gốc"
-developer_instructions = """
-Đọc và làm theo đúng toàn bộ hướng dẫn trong .agents/agents/ba.md.
-Trước khi làm, đọc và tuân thủ mọi file trong .agents/rules/.
-"""
