@@ -1,0 +1,95 @@
+@startuml
+title SYS-PAY-04 · Phương án A sau review
+caption US-PAY-04 (§4.4) · PAY-05 (§5) · Audit (§6)
+
+skinparam defaultFontName Segoe UI
+skinparam shadowing false
+skinparam sequence {
+  LifeLineBorderColor #526581
+  ParticipantBorderColor #244266
+  ParticipantBackgroundColor #EAF2FB
+  ActorBorderColor #244266
+  ArrowColor #244266
+  GroupBorderColor #526581
+}
+hide footbox
+
+actor "Kế toán trưởng" as KTT
+boundary "Màn hình điều chỉnh" as UI
+control PaymentAdjustmentService as Service
+participant PaymentRepository as PaymentRepo
+participant AdjustmentRepository as AdjustmentRepo
+participant AuditRepository as AuditRepo
+boundary "Màn hình nghiệp vụ" as BusinessUI
+participant "Luồng chuyển kế toán" as Accounting
+
+group Ghi nhận hồ sơ điều chỉnh
+  KTT -> UI : Gửi nội dung điều chỉnh và biên bản
+  UI -> Service : Adjust(mã bảng, nội dung, biên bản)
+  activate Service
+  Service -> Service : Kiểm tra quyền KTT và biên bản đính kèm
+  opt Có quyền và có biên bản
+    Service -> PaymentRepo : GetById(mã bảng)
+    PaymentRepo --> Service : Bảng gốc và trạng thái
+    Service -> Service : Kiểm tra bảng Approved và nội dung (OQ-02)
+  end
+  alt Điều kiện hợp lệ
+    group Giao dịch lưu hồ sơ và audit
+      Service -> Service : ResolveEffectivePayment(mã bảng)\nvà đối chiếu với cơ sở tính của yêu cầu
+      opt Cơ sở tính còn khớp
+        Service -> AdjustmentRepo : Create(mã bảng, số trước/sau,\ncác dòng thay đổi, biên bản)
+        AdjustmentRepo --> Service : Kết quả ghi hồ sơ (ví dụ 120 → 100 triệu)
+        opt Đã ghi hồ sơ
+          Service -> AuditRepo : Append(người thao tác, thời điểm, thay đổi)
+          AuditRepo --> Service : Kết quả ghi audit
+        end
+      end
+      opt Ghi hồ sơ và audit thành công
+        Service -> Service : Commit
+      end
+      alt Commit thành công
+        Service --> UI : Đã ghi nhận hồ sơ
+      else Cơ sở tính đã thay đổi
+        Service -> Service : Hoàn tác giao dịch
+        Service --> UI : Yêu cầu tải lại số liệu
+      else Giao dịch thất bại
+        Service -> Service : Hoàn tác giao dịch
+        Service --> UI : Trả lỗi ghi nhận
+      end
+    end
+  else Điều kiện chưa hợp lệ
+    Service --> UI : Từ chối và trả lý do
+  end
+  deactivate Service
+  UI --> KTT : Hiển thị kết quả
+end
+
+note over PaymentRepo, AdjustmentRepo
+  Bảng gốc lưu số đã duyệt ban đầu 120 triệu.
+  Điều kiện và thời điểm áp dụng hồ sơ chờ OQ-03.
+end note
+
+group Xác định số tiền tại thời điểm sử dụng
+  alt Tra cứu nghiệp vụ
+    BusinessUI -> Service : ResolveEffectivePayment(mã bảng)
+  else Chuẩn bị chuyển kế toán
+    Accounting -> Service : ResolveEffectivePayment(mã bảng)
+  end
+  activate Service
+  Service -> PaymentRepo : GetById(mã bảng)
+  PaymentRepo --> Service : Bảng Approved, số gốc 120 triệu
+  Service -> AdjustmentRepo : Đọc hồ sơ có hiệu lực tại thời điểm sử dụng
+  AdjustmentRepo --> Service : Hồ sơ áp dụng, nếu có
+  alt Điều chỉnh trong ví dụ đã có hiệu lực
+    Service -> Service : Áp dụng hồ sơ để xác định số tiền 100 triệu\nvà các dòng tương ứng
+  else Chưa có điều chỉnh có hiệu lực
+    Service -> Service : Dùng số đã duyệt 120 triệu và các dòng gốc
+  end
+  alt Tra cứu nghiệp vụ
+    Service --> BusinessUI : Trả số tiền và các dòng có hiệu lực để hiển thị
+  else Chuẩn bị chuyển kế toán
+    Service --> Accounting : Trả số tiền và các dòng có hiệu lực để chuyển
+  end
+  deactivate Service
+end
+@enduml
