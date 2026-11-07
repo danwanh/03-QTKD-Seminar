@@ -1,6 +1,9 @@
-# payment-management – bộ thiết kế (Yêu cầu 1)
+# payment-management – danh mục thiết kế dự kiến
 
-Thư mục này do agent `design` (`.agents/agents/design.md`) sinh ra.
+Thư mục này nhận đầu ra của agent `design` (`.agents/agents/design.md`).
+Hiện mới có chỉ mục và thư mục sơ đồ; chưa chạy agent tạo bộ thiết kế.
+Cách gọi, nguồn yêu cầu và giới hạn vai trò nằm trong README ở gốc workspace.
+Không coi các file liệt kê bên dưới là đã tồn tại hoặc đã được phê duyệt.
 
 | File | Nội dung theo đề bài |
 |---|---|

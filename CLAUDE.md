@@ -1,3 +1,12 @@
+# Hướng dẫn dự án QTKD – TA 1–2
+
+@AGENTS.md
+
+Bắt đầu bằng AGENTS.md được nhập ở trên, đọc toàn bộ .agents/rules/ và file
+vai trò được người dùng gọi. Không coi .agents/agents/ là thư mục Claude tự nạp.
+Custom subagent Claude Code ở .claude/agents/; hướng dẫn chạy trong README.md.
+Các hướng dẫn chung bên dưới áp dụng khi phù hợp với nhiệm vụ và quy tắc dự án.
+
 # CLAUDE.md
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
