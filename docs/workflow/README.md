@@ -8,7 +8,8 @@ Sản phẩm cuối bài tập được liệt kê ở TA-PDF trang 3, xem [sổ
 
 1. Kiểm tra cấu hình theo [README workspace](../../README.md); mở chat mới để
    nạp hướng dẫn. Ghi công cụ/phiên bản và nguồn đầu vào.
-2. Chạy BA; nhóm kiểm tra OQ. Không tự suy ra câu trả lời từ tài liệu tham khảo.
+2. Chạy BA từ TA-SPEC/TA-PDF cục bộ; nhóm kiểm tra OQ. Không tự suy ra câu trả
+   lời từ tài liệu ngoài phạm vi.
 3. Chạy design lần đầu; ghi giả định/OQ ngay từ đầu, không sửa hồi tố đặc tả.
 4. **Giữ bản lần đầu trước khi sửa** bằng một trong hai cách bên dưới.
 5. Mở chat mới chạy reviewer từ nguồn gốc và bản thiết kế, giữ nguyên báo cáo AI.
@@ -79,7 +80,6 @@ Nhóm ghi thay đổi thực tế, không nhận phần việc chưa làm:
 | File/mục | Phần AI tạo/đề xuất | Phần nhóm kiểm tra/sửa | Lý do | Người/ngày | Minh chứng diff/commit |
 |---|---|---|---|---|---|
 
-Phân công gốc: Google Docs tab `t.wacxj1o2c65v`, hàng “Agent, rules và tích hợp
-workspace”; cột người kiểm tra ghi Hiếu. Không suy ra người phụ trách từ người
-kiểm tra. Các hàng khác thuộc kiến trúc/UML/API/dữ liệu/truy vết; không nhận đã
-hoàn thành các phần đó trong lần thiết lập này.
+Nhóm bổ sung bảng phân công tại workspace, gồm người phụ trách, công việc,
+sản phẩm bàn giao và người kiểm tra. Chỉ ghi thông tin đã được nhóm xác nhận;
+không tự gán người phụ trách hoặc nhận đã hoàn thành phần việc khác.

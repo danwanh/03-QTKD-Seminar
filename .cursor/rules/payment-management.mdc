@@ -17,8 +17,8 @@ alwaysApply: true
 - Vai trò theo §2: NVKD, KTT, GĐKD. Trạng thái liệt kê trong §3: Draft,
   PendingApproval, Approved, Rejected, Cancelled. Giữ mâu thuẫn để hỏi;
   không thêm trạng thái hoặc chốt luồng cuối cùng khi chưa xác nhận.
-- Không tự đưa ký điện tử, phát hành, thuế hay workflow nhiều cấp từ Google Docs
-  vào bài TA như yêu cầu bắt buộc.
+- Chỉ dùng TA-SPEC và TA-PDF cục bộ làm căn cứ nghiệp vụ. Không mở rộng phạm vi
+  ngoài §1 hoặc lấy tài liệu nghiệp vụ trực tuyến làm yêu cầu bổ sung.
 
 ## Tình huống cần hỏi, chưa phải đáp án nghiệp vụ
 

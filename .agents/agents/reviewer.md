@@ -14,8 +14,8 @@ Dùng chat mới để review độc lập. Không sửa thiết kế; không du
    docs/design/payment-management/, gồm UML, API, dữ liệu, ma trận và OQ.
    Chưa có thiết kế/file còn thiếu thì báo Chưa đủ đầu vào review và danh sách
    thiếu; không tạo nhận xét giả cho tài liệu chưa tồn tại.
-3. Đọc đặc tả độc lập. Phân biệt mã US/PAY của TA với mã trùng trong Google Docs/
-   Excel đồ án; không dùng tài liệu tham khảo như đáp án OQ chưa được xác nhận.
+3. Đọc đặc tả TA độc lập; kiểm tra căn cứ từng nhận xét trong TA-SPEC/TA-PDF
+   cục bộ. Không dùng Excel đồ án hoặc tài liệu ngoài phạm vi làm đáp án OQ.
 4. Kiểm tra thiếu/mơ hồ/mâu thuẫn bị bỏ sót, nhất là đúng 500 triệu, điều chỉnh
    Approved, Rejected/Draft và kỳ tháng/quý. Dẫn cả hai phía, không tự chọn cách
    sửa nghiệp vụ.

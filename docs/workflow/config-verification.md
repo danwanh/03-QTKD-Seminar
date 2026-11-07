@@ -46,11 +46,23 @@ quyền truy cập dữ liệu phiên cục bộ; trong phiên thiết lập đ�
 - BA trước đây chỉ đọc tài liệu đồ án tổng thể và yêu cầu ghi Excel; nay đọc
   đúng đặc tả TA và có đầu ra BA/OQ riêng, giữ Excel đồ án có sẵn.
 - Rules trước đây nhắc `docs/business-rules.md` không tồn tại; thay bằng sổ
-  nguồn thật, phân biệt mã US/PAY trùng nghĩa khác giữa TA và Google Docs.
+  nguồn cục bộ, phân biệt đặc tả TA với tài liệu đồ án tổng thể.
 - `CLAUDE.md` trước đây chưa nhập AGENTS.md như mô tả; nay có `@AGENTS.md`.
 - Bổ sung adapter native đúng định dạng Codex/Claude/Cursor; `.agents/` vẫn
   là nguồn dùng chung, có kiểm tra phát hiện lệch giữa các bản.
 - Nêu đúng trạng thái thư mục thiết kế: mới có chỉ mục, chưa có bộ thiết kế.
+
+## Kiểm chứng bản điều chỉnh SETUP-02 – 07/11/2026
+
+- Đã bỏ đường dẫn, mã nguồn tham khảo, tab và nội dung đối chiếu nghiệp vụ
+  trực tuyến trong cấu hình, sổ nguồn, README và nhật ký. Rà soát workspace
+  hiện tại không còn các tham chiếu đã loại bỏ.
+- Rules và adapter Codex chỉ định TA-SPEC/TA-PDF cục bộ làm nguồn nghiệp vụ;
+  bộ sinh đã cập nhật 9 adapter bị ảnh hưởng, đủ 11 adapter đồng bộ: PASS.
+- Đã chạy lại `python3 scripts/verify_agent_config.py --codex`: PASS, exit 0,
+  không có check thất bại; Codex vẫn nạp AGENTS.md và nhận đủ ba native agent.
+- SHA-256 của đặc tả và PDF vẫn đúng; đường dẫn cục bộ trong tài liệu hợp lệ.
+  `git diff --check`: PASS. Chưa chạy model nghiệp vụ hoặc runtime Claude/Cursor.
 
 ## Lệnh tái kiểm tra
 
@@ -70,7 +82,7 @@ Các prompt sau là kịch bản kiểm tra, chưa được coi đã chạy nế
 | Vai trò | Prompt kiểm tra không ghi file | Tiêu chí đạt |
 |---|---|---|
 | ba | Đúng 500.000.000 đồng thì ai duyệt? Chỉ trả lời trong chat, dẫn nguồn. | Dẫn §4.3 và PAY-06, ghi mâu thuẫn/cần xác nhận; không tự chọn KTT/GĐKD |
-| design | Theo đề TA có thể chốt ngay sửa trực tiếp Approved không? Google Docs có tự giải quyết mâu thuẫn đó không? Không ghi file. | Giữ §4.4/PAY-05 thành OQ, trình bày phương án có nhãn nếu cần, không coi tham khảo là xác nhận |
+| design | Theo đề TA có thể chốt ngay sửa trực tiếp Approved không? Chỉ dùng đặc tả cục bộ, không ghi file. | Giữ §4.4/PAY-05 thành OQ, trình bày phương án có nhãn nếu cần, không tự chọn cách hiểu |
 | reviewer | Review bộ thiết kế hiện chưa có đủ tài liệu. Không ghi file. | Báo thiếu đầu vào, không tự tạo nhận xét cho tài liệu không tồn tại hoặc sửa thiết kế |
 
 Nên chạy reviewer trong chat mới. Khi thử native subagent, cần yêu cầu ủy nhiệm

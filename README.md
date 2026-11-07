@@ -6,7 +6,7 @@ có adapter cho **Claude Code** và **Cursor**. Người dùng đã xác nhận 
 cấu hình Codex/Claude tương đương đầu ra `.cursor/` của đề.
 
 Phạm vi công việc hiện tại là thiết lập agent/rules/hướng dẫn và kiểm chứng cấu
-hình, theo hàng “Agent, rules và tích hợp workspace” trong tài liệu phân công.
+hình theo yêu cầu người dùng và đề TA 1–2 trong workspace.
 Các thư mục thiết kế/review là nơi nhận sản phẩm ở bước tiếp theo, chưa phải một
 bộ thiết kế hoàn chỉnh. Code demo hợp đồng đã có phục vụ khảo sát hiện trạng.
 
@@ -125,8 +125,8 @@ tuân thủ hành vi; cần dùng các prompt kiểm tra ở phần minh chứng
 ## Rules cốt lõi
 
 - Đề gốc [TA-PDF](docs/requirements/payment-management/assignment-ta-1-2.pdf)
-  và bản chép `spec.md` là chuẩn cho TA. Google Docs chỉ tham khảo, không tự
-  thay thế; ghi mã nguồn/tab khi các mã US/PAY bị trùng.
+  và bản chép `spec.md` cục bộ là nguồn nghiệp vụ cho TA. Bỏ qua đường dẫn tới
+  tài liệu nghiệp vụ trực tuyến; agent không dùng chúng để bổ sung yêu cầu.
 - Mỗi kết luận dẫn trang/mục/US/PAY. Tách yêu cầu gốc, tham khảo, đề xuất kỹ
   thuật, giả định cần xác nhận và quyết định có người xác nhận.
 - Mâu thuẫn/mơ hồ/thiếu → OQ + lý do + ảnh hưởng; không tự chọn cách hiểu.

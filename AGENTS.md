@@ -7,6 +7,8 @@
 
 Nguồn và phạm vi: docs/requirements/payment-management/sources.md.
 Đặc tả TA 1–2: docs/requirements/payment-management/spec.md.
+Chỉ dùng TA-SPEC/TA-PDF cục bộ làm nguồn nghiệp vụ; bỏ qua đường dẫn tới
+tài liệu nghiệp vụ trực tuyến.
 Không tự chốt nghiệp vụ mâu thuẫn/mơ hồ/thiếu; ghi Cần xác nhận và dẫn nguồn.
 
 ## Gọi vai trò

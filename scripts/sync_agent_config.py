@@ -49,7 +49,8 @@ def expected_adapters():
             "docs/requirements/payment-management/sources.md, rồi đọc và tuân thủ "
             f".agents/agents/{name}.md, kể cả giới hạn ghi file. "
             "Đọc docs/requirements/payment-management/spec.md làm chuẩn. "
-            "Dẫn nguồn cụ thể; không trộn nghiệp vụ Google Docs vào đề TA. "
+            "Dẫn nguồn cụ thể trong TA-SPEC/TA-PDF cục bộ; bỏ qua đường dẫn "
+            "tới tài liệu nghiệp vụ trực tuyến. "
             "Không tự chốt mâu thuẫn/mơ hồ/thiếu; ghi Cần xác nhận và OQ. "
             "Nếu người dùng yêu cầu kiểm tra không ghi file, chỉ trả lời trong chat."
         )

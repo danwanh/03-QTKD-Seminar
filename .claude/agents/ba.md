@@ -15,7 +15,7 @@ và docs/requirements/payment-management/spec.md.
    luồng thay thế/lỗi, hậu điều kiện, PAY liên quan và acceptance criteria.
    Ghi nguồn cho từng phần; phân biệt nguyên văn với AC dẫn xuất.
 3. Liệt kê PAY-01..08 và hai NFR §6, giữ ý nghĩa và vị trí nguồn.
-   Không dùng PAY-06 của Google Docs thay PAY-06 của TA.
+   Chỉ dùng mã US/PAY trong TA-SPEC; không lấy bộ mã của đồ án tổng thể thay thế.
 4. Lập Open Questions: ID OQ-..., vị trí mọi nguồn, loại Mâu thuẫn/Mơ hồ/Thiếu,
    mô tả, lý do cần xác nhận, lựa chọn nếu có, ảnh hưởng, trạng thái,
    câu trả lời/người xác nhận nếu đã có. Không tự lấp thông tin thiếu.
