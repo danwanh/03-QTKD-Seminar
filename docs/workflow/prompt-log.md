@@ -302,3 +302,14 @@ sequence chỉ làm từ bản v2.
 - AI bỏ nhãn giả định/cần xác nhận và lời dẫn chờ phê duyệt; giữ dẫn nguồn, nội dung luồng và tham chiếu OQ. Không ghi nhận phê duyệt nghiệp vụ.
 - Kiểm chứng: tìm chuỗi trong tệp sau sửa; không còn cụm giả định/cần xác nhận/Design Pending Approval. Chỉ sửa văn bản Markdown; không sửa hoặc render lại sequence.
 - Phần nhóm sửa: chưa ghi nhận.
+
+## PAY-02-V2-06 — 07/11/2026
+
+- Công cụ: Codex desktop; Python 3; PlantUML 1.2026.9, JRE 21 cục bộ.
+- Prompt thực tế: hãy loại bỏ các nhãn phương án mô phỏng của sequence diagram
+- Nguồn/đầu ra: sequence-us-pay-02-v2.puml và ảnh SVG/PNG cùng thư mục docs/analysis/payment-management/diagrams/.
+- AI bỏ hai câu nhãn mô phỏng/phương án chưa phê duyệt; giữ luồng và tham chiếu OQ. Không ghi nhận xác nhận nghiệp vụ.
+- Kiểm chứng: Java mặc định không có runtime; dùng JRE tại /private/tmp/pay02-v2-tools/java/jdk-21.0.13+9-jre/Contents/Home/bin/java chạy plantuml.jar với -checkonly, -tsvg, -tpng: thành công.
+- Phần nhóm sửa: chưa ghi nhận.
+
+- Làm rõ tiếp từ người dùng: đại loại là nội dung mang ý nghĩa "giả sử, mô phỏng...". Bỏ thêm note phương án TO-BE/G1–G4, lời dẫn chưa khảo sát/chưa phê duyệt và điều kiện giả định khỏi nhãn; giữ cảnh báo xung đột đúng 500 triệu và tham chiếu OQ. Kiểm tra cú pháp và xuất lại SVG/PNG thành công.
