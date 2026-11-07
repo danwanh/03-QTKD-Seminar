@@ -1,0 +1,111 @@
+@startuml sequence-cancel
+autonumber
+skinparam Style strictuml
+skinparam SequenceMessageAlignment center
+skinparam ResponseMessageBelowArrow true
+skinparam MaxMessageSize 260
+
+title Sequence Diagram: Hủy Bảng Thanh Toán Nháp (US-PAY-05 / UC-PAY-05)
+
+actor "NVKD (Người tạo bảng)" as Actor
+boundary "PaymentSheet View\n(Giao diện Web)" as View
+control "PaymentSheetController\n(API Controller)" as Controller
+control "PaymentSheetService\n(Domain Service)" as Service
+control "AuditLogService\n(Audit Service)" as Audit
+database "Database\n(SQL Server / EF Core)" as DB
+
+== 1. Kích hoạt và Xác nhận Lý do hủy ==
+Actor -> View : Nhấn "Hủy bảng thanh toán"
+activate View
+View -> View : Hiển thị modal xác nhận hủy (yêu cầu nhập lý do)
+View --> Actor : Hiển thị hộp thoại
+
+Actor -> View : Nhập lý do hủy & nhấn "Xác nhận hủy"
+opt Lý do hủy rỗng hoặc chỉ có khoảng trắng
+    View --> Actor : Hiển thị lỗi xác thực client: "Lý do hủy là bắt buộc"
+end
+
+== 2. Gửi yêu cầu Hủy bảng thanh toán ==
+View -> Controller : POST /api/payment-sheets/{id}/cancel\n(Headers: Authorization; Body: { reason, rowVersion })
+activate Controller
+
+Controller -> Controller : Validate ModelState\n(Kiểm tra Reason không rỗng)
+alt ModelState không hợp lệ (Lý do rỗng)
+    Controller --> View : 400 Bad Request\n{ code: "INVALID_INPUT", message: "Ly do huy la bat buoc." }
+    View --> Actor : Hiển thị thông báo lỗi
+end
+
+== 3. Kiểm tra nghiệp vụ & Phân quyền sơ bộ ==
+Controller -> Service : CancelAsync(id, reason, rowVersion, currentUserId)
+activate Service
+
+Service -> DB : GetPaymentSheetByIdAsync(id)
+activate DB
+DB --> Service : paymentSheet
+deactivate DB
+
+alt Không tìm thấy bảng thanh toán (paymentSheet == null)
+    Service --> Controller : Result.Failure(NOT_FOUND, "Khong tim thay bang thanh toan.")
+    Controller --> View : 404 Not Found\n{ code: "NOT_FOUND" }
+    View --> Actor : Hiển thị lỗi: Không tìm thấy bảng thanh toán
+else Người thực hiện không phải người tạo bảng (CreatedBy != currentUserId)
+    Service --> Controller : Result.Failure(FORBIDDEN, "Chi NVKD tao bang moi duoc huy.")
+    Controller --> View : 403 Forbidden\n{ code: "FORBIDDEN" }
+    View --> Actor : Hiển thị lỗi: Bạn không có quyền hủy bảng này
+else Bảng không ở trạng thái Draft (Status != Draft)
+    Service --> Controller : Result.Failure(INVALID_STATE, "Bang thanh toan khong o trang thai Draft.")
+    Controller --> View : 409 Conflict\n{ code: "INVALID_STATE" }
+    View --> Actor : Hiển thị lỗi: Bảng không ở trạng thái nháp & tự động tải lại
+else Điều kiện sơ bộ hợp lệ - Khởi tạo Transaction & Kiểm soát Concurrency tại DB
+    == 4. Mở Transaction, Thực thi cập nhật & Bắt lỗi Concurrency tại Tầng DB ==
+    Service -> DB : BeginTransactionAsync()
+    activate DB
+    
+    Service -> Service : paymentSheet.Status = Cancelled\npaymentSheet.CancelReason = reason\npaymentSheet.CancelledBy = currentUserId\npaymentSheet.CancelledAt = UtcNow
+    
+    Service -> DB : UpdatePaymentSheetAsync(paymentSheet, rowVersion)\n(EF Core: SaveChangesAsync() / SQL UPDATE WHERE RowVersion = @rowVersion)
+    
+    alt Tầng DB phát hiện xung đột đồng thời (DbUpdateConcurrencyException)
+        DB --> Service : Ném ngoại lệ Concurrency\n(RowVersion không khớp do phiên khác vừa update)
+        Service -> DB : RollbackTransactionAsync()
+        Service --> Controller : Result.Failure(CONCURRENCY_CONFLICT, "Du lieu da bi thay doi boi thao tac khac.")
+        Controller --> View : 409 Conflict\n{ code: "CONCURRENCY_CONFLICT", message: "Du lieu da bi thay doi, vui long tai lai trang." }
+        View --> Actor : Hiển thị lỗi xung đột dữ liệu & làm mới dữ liệu màn hình
+    else Cập nhật trạng thái thành công tại DB
+        DB --> Service : RowsAffected = 1 (Update thành công)
+        
+        == 5. Ghi Audit Log & Xử lý Ngoại lệ Transaction ==
+        Service -> Audit : LogAsync(Entity="PaymentSheet", EntityId=id,\nAction="CANCEL", OldStatus="Draft",\nNewStatus="Cancelled", Actor=currentUserId, Reason=reason)
+        activate Audit
+        Audit -> DB : InsertAuditLogAsync(auditEntry)
+        
+        alt Ghi Audit Log hoặc thao tác DB phát sinh ngoại lệ (DbException)
+            DB --> Audit : Ném ngoại lệ DB (Lỗi kết nối / Timeout)
+            Audit --> Service : Ném Exception
+            Service -> DB : RollbackTransactionAsync()
+            Service --> Controller : Result.Failure(INTERNAL_SERVER_ERROR, "Loi he thong khi luu Audit Log.")
+            Controller --> View : 500 Internal Server Error\n{ code: "SERVER_ERROR", message: "Co loi xay ra trong qua trinh xu ly." }
+            View --> Actor : Hiển thị lỗi hệ thống, yêu cầu thử lại sau
+        else Ghi Audit Log thành công
+            DB --> Audit : AuditEntry Inserted
+            Audit --> Service : Log recorded
+            deactivate Audit
+            
+            Service -> DB : CommitTransactionAsync()
+            DB --> Service : Transaction Committed
+            deactivate DB
+            
+            Service --> Controller : Result.Success(updatedPaymentSheetDto)
+            deactivate Service
+            
+            Controller --> View : 200 OK\n(PaymentSheetResponse: { id, status: "Cancelled", ... })
+            deactivate Controller
+            
+            View -> View : Chuyển giao diện sang chế độ Cancelled\n(Khóa toàn bộ nút Chỉnh sửa / Trình duyệt)
+            View --> Actor : Thông báo hủy bảng thanh toán thành công
+            deactivate View
+        end
+    end
+end
+
+@enduml

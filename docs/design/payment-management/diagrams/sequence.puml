@@ -1,0 +1,162 @@
+@startuml sequence
+autonumber
+skinparam Style strictuml
+skinparam SequenceMessageAlignment center
+skinparam ResponseMessageBelowArrow true
+skinparam MaxMessageSize 250
+
+title Sequence Diagram: Luồng Nghiệp Vụ Chính Module Bảng Thanh Toán\n(US-PAY-01 Lập -> US-PAY-02 Trình Duyệt -> US-PAY-03 Duyệt / Từ Chối)
+
+actor "Nhân viên Kinh doanh\n(NVKD)" as NVKD
+actor "Người duyệt\n(KTT hoặc GĐKD)" as Approver
+boundary "Payment Management\nUI (Web App)" as UI
+control "PaymentSheetController\n(API Gateway / Controller)" as Controller
+control "PaymentSheetService\n(Core Domain Service)" as Service
+boundary "External Modules\n(Contract / Pricing / Volume)" as External
+control "NotificationService\n(Thông báo)" as Notify
+control "AuditLogService\n(Audit Trail)" as Audit
+database "Database\n(SQL Server / EF Core)" as DB
+
+== Giai đoạn 1: US-PAY-01 Lập Bảng Thanh Toán (Draft) ==
+NVKD -> UI : Chọn Hợp đồng (Active) & Kỳ thanh toán (Tháng/Quý)
+UI -> Controller : POST /api/payment-sheets\n{ contractId, billingPeriod }
+activate Controller
+
+Controller -> Service : CreatePaymentSheetAsync(contractId, billingPeriod, currentUserId)
+activate Service
+
+Service -> External : Kiểm tra hợp đồng Active (PAY-01) &\nLấy sản lượng đã đối soát (PAY-02) &\nLấy đơn giá từ bảng giá phù hợp
+activate External
+External --> Service : Hợp đồng hợp lệ, Danh sách Sản lượng & Đơn giá
+deactivate External
+
+Service -> Service : Sinh các dòng thanh toán (PAY-03: Thành tiền = SL x ĐG)\n& Tính tổng tiền bảng thanh toán
+
+Service -> DB : Insert PaymentSheet (Status = Draft, CreatedBy = NVKD)
+activate DB
+DB --> Service : Saved (Id, RowVersion)
+deactivate DB
+
+Service -> Audit : LogAsync(Entity="PaymentSheet", Action="CREATE",\nOldStatus=null, NewStatus="Draft", Actor=NVKD)
+activate Audit
+Audit -> DB : InsertAuditLog()
+deactivate Audit
+
+Service --> Controller : Result.Success(paymentSheetDto)
+deactivate Service
+Controller --> UI : 201 Created (PaymentSheet: Draft)
+deactivate Controller
+UI --> NVKD : Hiển thị bảng thanh toán nháp (Draft)
+
+== Giai đoạn 2: US-PAY-02 Trình Duyệt Bảng Thanh Toán (PendingApproval) ==
+NVKD -> UI : Kiểm tra số liệu & Nhấn "Trình duyệt"
+UI -> Controller : POST /api/payment-sheets/{id}/submit\n{ rowVersion }
+activate Controller
+
+Controller -> Service : SubmitForApprovalAsync(id, rowVersion, currentUserId)
+activate Service
+
+Service -> DB : GetPaymentSheetByIdAsync(id)
+activate DB
+DB --> Service : paymentSheet
+deactivate DB
+
+Service -> Service : Kiểm tra điều kiện PAY-04:\n- Status == Draft\n- Tổng tiền >= 0 (chặn nếu âm)\n- Đầy đủ dòng dịch vụ bắt buộc\n- Chống thao tác trùng
+
+alt Không thỏa điều kiện PAY-04 hoặc xung đột Concurrency
+    Service --> Controller : Result.Failure(INVALID_PAYMENT_SHEET)
+    Controller --> UI : 400 Bad Request / 409 Conflict
+    UI --> NVKD : Báo lỗi điều kiện trình duyệt
+else Thỏa điều kiện trình duyệt
+    Service -> DB : Update PaymentSheet (Status = PendingApproval, RowVersion)
+    activate DB
+    DB --> Service : Updated
+    deactivate DB
+    
+    Service -> Audit : LogAsync(Entity="PaymentSheet", Action="SUBMIT",\nOldStatus="Draft", NewStatus="PendingApproval", Actor=NVKD)
+    activate Audit
+    Audit -> DB : InsertAuditLog()
+    deactivate Audit
+    
+    Service -> Service : Xác định người duyệt theo PAY-06:\n- Tổng tiền >= 500tr -> GĐKD\n- Dưới 500tr -> KTT
+    
+    Service -> Notify : SendApprovalRequestNotificationAsync(approverRole, sheetId)
+    activate Notify
+    Notify --> Approver : Gửi thông báo có bảng thanh toán cần duyệt
+    deactivate Notify
+
+    Service --> Controller : Result.Success(updatedSheetDto)
+    deactivate Service
+    Controller --> UI : 200 OK (PaymentSheet: PendingApproval)
+    deactivate Controller
+    UI --> NVKD : Thông báo trình duyệt thành công
+end
+
+== Giai đoạn 3: US-PAY-03 Duyệt hoặc Từ Chối Bảng Thanh Toán ==
+Approver -> UI : Mở xem bảng thanh toán ở trạng thái PendingApproval
+UI --> Approver : Hiển thị chi tiết dòng dịch vụ & Tổng tiền
+
+alt Trường hợp 3A: Phê duyệt bảng thanh toán (Approve)
+    Approver -> UI : Nhấn nút "Duyệt"
+    UI -> Controller : POST /api/payment-sheets/{id}/approve\n{ rowVersion }
+    activate Controller
+    
+    Controller -> Service : ApproveAsync(id, rowVersion, approverUserId)
+    activate Service
+    
+    Service -> Service : Kiểm tra phân quyền:\n- Phân quyền theo ngưỡng tiền (PAY-06)\n- Người lập không được duyệt (PAY-07: approver != creator)
+    
+    Service -> DB : Update PaymentSheet (Status = Approved, ApprovedBy, ApprovedAt)
+    activate DB
+    DB --> Service : Updated
+    deactivate DB
+    
+    Service -> Audit : LogAsync(Entity="PaymentSheet", Action="APPROVE",\nOldStatus="PendingApproval", NewStatus="Approved", Actor=Approver)
+    activate Audit
+    Audit -> DB : InsertAuditLog()
+    deactivate Audit
+    
+    Service -> Notify : NotifyApprovalCompletedAsync(sheetId, NVKD, KeToan)
+    activate Notify
+    Notify --> NVKD : Thông báo bảng thanh toán đã được duyệt
+    deactivate Notify
+    
+    Service --> Controller : Result.Success(approvedSheetDto)
+    deactivate Service
+    Controller --> UI : 200 OK (Status: Approved)
+    deactivate Controller
+    UI --> Approver : Thông báo duyệt thành công (Chuyển kế toán xuất hóa đơn)
+
+else Trường hợp 3B: Từ chối bảng thanh toán (Reject)
+    Approver -> UI : Nhấn nút "Từ chối" & Nhập lý do từ chối (bắt buộc - PAY-08)
+    UI -> Controller : POST /api/payment-sheets/{id}/reject\n{ reason, rowVersion }
+    activate Controller
+    
+    Controller -> Service : RejectAsync(id, reason, rowVersion, approverUserId)
+    activate Service
+    
+    Service -> Service : Kiểm tra PAY-08 (Reason không rỗng) &\nPAY-07 (Approver != Creator)
+    
+    Service -> DB : Update PaymentSheet\n[Trạng thái: Rejected theo Mục 3 HOẶC Draft theo PAY-08]\n(Ghi nhận RejectReason = reason, RejectedBy)
+    activate DB
+    DB --> Service : Updated
+    deactivate DB
+    
+    Service -> Audit : LogAsync(Entity="PaymentSheet", Action="REJECT",\nOldStatus="PendingApproval", NewStatus="Rejected/Draft",\nActor=Approver, Reason=reason)
+    activate Audit
+    Audit -> DB : InsertAuditLog()
+    deactivate Audit
+    
+    Service -> Notify : NotifyRejectionAsync(sheetId, NVKD, reason)
+    activate Notify
+    Notify --> NVKD : Thông báo bảng bị từ chối kèm lý do
+    deactivate Notify
+    
+    Service --> Controller : Result.Success(rejectedSheetDto)
+    deactivate Service
+    Controller --> UI : 200 OK (Status: Rejected / Draft)
+    deactivate Controller
+    UI --> Approver : Thông báo đã gửi phản hồi từ chối
+end
+
+@enduml
