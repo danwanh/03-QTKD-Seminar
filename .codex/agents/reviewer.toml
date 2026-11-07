@@ -1,0 +1,6 @@
+name = "reviewer"
+description = "Review độc lập thiết kế payment-management so với đặc tả, không sửa thiết kế"
+developer_instructions = """
+Đọc và làm theo đúng toàn bộ hướng dẫn trong .agents/agents/reviewer.md.
+Trước khi làm, đọc và tuân thủ mọi file trong .agents/rules/.
+"""
