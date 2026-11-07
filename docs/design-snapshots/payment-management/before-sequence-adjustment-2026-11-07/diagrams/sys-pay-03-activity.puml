@@ -1,0 +1,137 @@
+@startuml sys-pay-03-activity
+' Activity Diagram – SYS-PAY-03: Duyệt hoặc từ chối bảng thanh toán
+' Nguồn: docs/analysis/payment-management/sys-pay-03-duyet-tu-choi-v1.md (Mục 1)
+' Số bước / tên dòng thay thế (A1, A3, A3.2, A4..A7) theo đặc tả.
+' Trạng thái: Chưa kiểm tra kết xuất sơ đồ.
+
+skinparam shadowing false
+skinparam defaultFontSize 11
+skinparam ActivityBorderColor #555555
+skinparam ArrowColor #555555
+skinparam SwimlaneTitleFontStyle bold
+
+title SYS-PAY-03 – Duyệt hoặc từ chối bảng thanh toán
+
+|Người duyệt (Kế toán trưởng / Giám đốc kinh doanh)|
+|Hệ thống|
+|Nhân viên kinh doanh|
+|Kế toán trưởng (nhận thông báo)|
+
+' ------------------------------------------------------------
+' Kích hoạt + A1: nhắc khi người duyệt chưa xử lý
+' ------------------------------------------------------------
+|Hệ thống|
+start
+note right
+  Kích hoạt: thông báo trình duyệt (SYS-PAY-02),
+  nhắc hạn, hoặc bảng duyệt lại sau điều chỉnh (SYS-PAY-04).
+  Tiền điều kiện: bảng ở PendingApproval,
+  đã giao cho một người duyệt cụ thể.
+end note
+while (Người duyệt chưa xử lý\nvà đến mốc nhắc?) is (có)
+  :A1. Gửi nhắc tới người duyệt được giao
+  (trong hệ thống + email);
+  note right
+    Hạn: 3 ngày làm việc.
+    Nhắc: còn 1 ngày, đúng hạn,
+    sau đó mỗi ngày làm việc.
+    Quá hạn: không đổi trạng thái.
+  end note
+endwhile (người duyệt mở bảng)
+
+' ------------------------------------------------------------
+' Dòng cơ bản bước 1–3
+' ------------------------------------------------------------
+|Người duyệt (Kế toán trưởng / Giám đốc kinh doanh)|
+:1. Mở bảng đang chờ duyệt;
+
+|Hệ thống|
+:2. Hiển thị bảng: hợp đồng, kỳ, các dòng,
+tổng tiền, người tạo, trạng thái, hạn duyệt
+(+ số hiệu biên bản nếu duyệt lại);
+
+|Người duyệt (Kế toán trưởng / Giám đốc kinh doanh)|
+if (3. Chọn thao tác) then (Duyệt)
+  :3. Chọn "Duyệt";
+else (Từ chối → A3)
+  :A3 (1). Chọn "Từ chối";
+  repeat
+    :A3 (2). Chọn lý do trong danh mục,
+    nhập nội dung (10–500 ký tự), xác nhận;
+    |Hệ thống|
+  backward :A3.2. Báo lỗi lý do không hợp lệ;
+  repeat while (Lý do hợp lệ?) is (không) not (có)
+endif
+
+' ------------------------------------------------------------
+' Kiểm tra chung bước 4–6 (dòng từ chối: A3 (3))
+' ------------------------------------------------------------
+|Hệ thống|
+if (4. Bảng còn ở PendingApproval?) then (không)
+  :A4. Chặn, hiển thị trạng thái hiện tại
+  (chỉ ghi nhận quyết định đầu tiên);
+  stop
+else (có)
+endif
+
+if (5. Là người được giao, hoặc Giám đốc kinh doanh\nduyệt thay bảng < 500 triệu; đúng ngưỡng\n(≥ 500 triệu chỉ Giám đốc kinh doanh)?) then (không)
+  :A5. Chặn: không phải người được giao
+  hoặc sai thẩm quyền theo tổng tiền;
+  stop
+else (có)
+endif
+
+if (6. Khác người tạo bảng\n(và khác người điều chỉnh nếu duyệt lại)?) then (không)
+  :A6. Chặn: người tạo / người điều chỉnh
+  không được tự duyệt;
+  stop
+else (có)
+endif
+
+' ------------------------------------------------------------
+' Ghi nhận kết quả
+' ------------------------------------------------------------
+if (Thao tác đã chọn?) then (Duyệt)
+  :7. Chuyển sang Approved; lưu người duyệt,
+  thời điểm, đánh dấu nếu duyệt thay;
+  :8. Ghi audit log (ai, lúc nào,
+  trạng thái trước/sau);
+  if (Lưu thành công?) then (không)
+    :A7. Hủy toàn bộ thao tác,
+    giữ nguyên trạng thái, báo lỗi;
+    stop
+  else (có)
+  endif
+  :9. Gửi thông báo kết quả
+  (trong hệ thống + email);
+  fork
+    |Nhân viên kinh doanh|
+    :Nhận thông báo "Đã duyệt";
+  fork again
+    |Kế toán trưởng (nhận thông báo)|
+    :Nhận thông báo "Đã duyệt"
+    (bỏ qua nếu chính là người duyệt);
+  end fork
+else (Từ chối)
+  :A3 (4). Lưu lý do (không sửa được),
+  chuyển sang Rejected;
+  :A3 (5). Ghi audit log kèm lý do;
+  if (Lưu thành công?) then (không)
+    :A7. Hủy toàn bộ thao tác,
+    giữ nguyên trạng thái, báo lỗi;
+    stop
+  else (có)
+  endif
+  :A3 (6). Gửi thông báo từ chối
+  (trong hệ thống + email);
+  |Nhân viên kinh doanh|
+  :Nhận thông báo "Bị từ chối" kèm lý do;
+  note right
+    Ngoài UC: chỉ người tạo được mở lại
+    Rejected → Draft để sửa và trình lại,
+    hoặc hủy Rejected → Cancelled.
+  end note
+endif
+
+stop
+@enduml

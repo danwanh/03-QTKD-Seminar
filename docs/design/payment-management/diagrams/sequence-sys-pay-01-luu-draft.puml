@@ -1,0 +1,126 @@
+@startuml sys_pay_01_luu_draft
+' Nguồn: TA-SPEC §4.1, PAY-01..03, §6.
+' SYS-PAY-01 v01 bước 8–11; A9, A10; E4, E5, E9, E10; KT-01..05.
+' Thành phần/phương thức, requestId, sourceBaseline, expectedVersion là TO-BE.
+title SYS-PAY-01 — Lưu Draft mới hoặc cập nhật Draft
+hide footbox
+autonumber
+skinparam defaultFontName Segoe UI
+skinparam defaultFontSize 13
+skinparam maxMessageSize 240
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+
+actor "Nhân viên kinh doanh\n(NVKD)" as User
+boundary "PaymentForm\nGiao diện bảng thanh toán" as UI
+control "PaymentApplicationService\nĐiều phối nghiệp vụ" as Service
+participant "PaymentSourceReader\nHợp đồng / Bảng giá / Sản lượng\n<<chỉ đọc>>" as Source
+database "PaymentStore\nBảng / Dòng / Audit / Kết quả lưu" as Store
+
+User -> UI : Nhấn Lưu
+UI -> Service : saveDraft(actor, mode, input, requestId,\nsourceBaseline, paymentId?, expectedVersion?)
+Service -> Service : Kiểm tra quyền thực hiện
+break không có vai trò NVKD
+  Service --> UI : Từ chối lưu
+  UI --> User : Thông báo không có quyền
+end
+
+Service -> Store : Tìm kết quả đã lưu của cùng người và cùng yêu cầu
+Store --> Service : Kết quả đã lưu / chưa có kết quả
+break cùng yêu cầu đã lưu thành công — A10
+  Service --> UI : Trả kết quả đã lưu; không ghi lại
+  UI --> User : Hiển thị bảng đã lưu
+end
+
+Service -> Service : Kiểm tra các trường bắt buộc và kỳ theo cấu hình
+break thiếu trường bắt buộc hoặc kỳ không hợp lệ — E9
+  Service --> UI : Trả trường/điều kiện cần sửa
+  UI --> User : Giữ dữ liệu nhập để điều chỉnh
+end
+
+opt mode = update
+  Service -> Store : Đọc người lập, trạng thái và phiên bản bảng đang sửa
+  Store --> Service : Thông tin hiện tại / không tìm thấy
+end
+break mode = update VÀ (sai người lập / không còn Draft / phiên bản cũ / không tồn tại) — E9
+  Service --> UI : Từ chối cập nhật
+  UI --> User : Thông báo cần kiểm tra lại bảng hiện tại
+end
+
+Service -> Source : Đọc lại hợp đồng, bảng giá hiện hành, sản lượng theo kỳ
+Source --> Service : Nguồn hiện tại / lỗi đọc
+break lỗi đọc nguồn — E10
+  Service --> UI : Không hoàn tất lưu
+  UI --> User : Thông báo lỗi; dữ liệu đã lưu giữ nguyên
+end
+break hợp đồng hết hiệu lực / giá không hợp lệ / sản lượng dùng chưa đối soát — E9/E5
+  Service --> UI : Không đủ điều kiện lưu
+  UI --> User : Thông báo nguyên nhân
+end
+
+Service -> Store : Kiểm tra lại kết quả yêu cầu và bảng khác cùng hợp đồng,\ncùng tháng/năm hoặc quý/năm, trạng thái khác Cancelled\n(kể cả Draft; loại chính bảng đang sửa)
+Store --> Service : Đã lưu cùng yêu cầu / có bảng khác / không trùng
+break cùng yêu cầu vừa được hoàn tất — A10
+  Service --> UI : Trả kết quả đã lưu; không tạo thêm bảng
+  UI --> User : Hiển thị kết quả lần lưu thành công
+end
+break có bảng khác cùng hợp đồng và cùng tháng/năm hoặc quý/năm — E9
+  Service --> UI : Từ chối lưu bảng trùng, kể cả trùng Draft
+  UI --> User : Thông báo kỳ này đã có bảng thanh toán
+end
+note over Service, Store
+  Cancelled không ngăn lập lại; giữ bảng cũ và lịch sử.
+  Tạo mới: không được có bất kỳ bảng khác chưa Cancelled cùng hợp đồng/kỳ.
+  Cập nhật: loại chính bảng đang sửa khỏi kiểm tra trùng.
+end note
+
+Service -> Service : So sánh nguồn hiện tại với mốc nguồn của bản xem trước
+break nguồn đã thay đổi — A9; chưa lưu trong lần thao tác này
+  Service --> UI : Trả phần nguồn thay đổi và tác động lên bản nháp
+  UI --> User : Hiển thị đối chiếu trước khi áp dụng
+  alt NVKD đồng ý cập nhật
+    User -> UI : Xác nhận áp dụng thay đổi nguồn
+    UI -> Service : refreshPreview(input, acceptedSource)
+    Service -> Service : Áp dụng phần được chấp nhận và tính lại
+    Service --> UI : Bản xem trước và mốc nguồn mới
+    UI --> User : Kiểm tra lại và bấm Lưu khi sẵn sàng
+  else NVKD chưa đồng ý cập nhật
+    UI --> User : Giữ dữ liệu nhập; chưa ghi đè, chưa lưu
+  end
+end
+
+Service -> Service : Tính lại thành tiền và tổng tiền từ dữ liệu hợp lệ
+
+group Lưu bảng, dòng và audit trong cùng giao dịch
+  Service -> Store : executeAtomicSave(command, requestId, actor, expectedVersion)
+  Store -> Store : Bắt đầu giao dịch; kiểm tra lại kết quả cùng yêu cầu
+  Store -> Store : Kiểm tra lại bảng cùng hợp đồng và cùng tháng/năm hoặc quý/năm,\ntrạng thái khác Cancelled (kể cả Draft); loại chính bảng đang sửa
+  Store -> Store : Kiểm tra thời hạn hợp đồng;\nnếu cập nhật, kiểm tra người lập, Draft và phiên bản
+  alt cùng yêu cầu đã được lưu — A10
+    Store -> Store : Kết thúc giao dịch; không ghi thêm
+    Store --> Service : Kết quả đã lưu của cùng yêu cầu
+    Service --> UI : Trả lại kết quả thành công
+    UI --> User : Hiển thị bảng đã lưu
+  else có bảng khác trùng kỳ / điều kiện cập nhật không đạt / mã yêu cầu dùng sai nội dung
+    Store -> Store : Rollback
+    Store --> Service : Xung đột; không ghi thay đổi
+    Service --> UI : Thông báo nguyên nhân không thể lưu
+    UI --> User : Kiểm tra lại dữ liệu
+  else đủ điều kiện ghi
+    Store -> Store : Lưu bảng Draft và các dòng thanh toán;\nghi audit; lưu kết quả của yêu cầu
+    alt lỗi ghi bảng / dòng / audit / kết quả — E10
+      Store -> Store : Rollback toàn bộ giao dịch
+      Store --> Service : Lưu thất bại; dữ liệu trước đó giữ nguyên
+      Service --> UI : Thông báo lỗi lưu
+      UI --> User : Chưa hoàn tất; có thể gửi lại cùng yêu cầu
+    else ghi thành công
+      Store -> Store : Commit
+      Store --> Service : Bảng Draft đã lưu và kết quả thao tác
+      Service --> UI : Thông báo lưu thành công
+      UI --> User : Hiển thị bảng đã lưu
+    end
+  end
+end
+
+footer SYS-PAY-01 — Lập bảng thanh toán
+@enduml
